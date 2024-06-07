@@ -1,10 +1,3 @@
-.. image:: /readme/images/labelimg.png
-        :target: https://github.com/heartexlabs/label-studio
-
-Label Studio is a modern, multi-modal data annotation tool
-=======
-
-
 The `labelImg.py` code now includes:
 
 - **Dark Mode**: Toggleable from the View menu for low-light use.
