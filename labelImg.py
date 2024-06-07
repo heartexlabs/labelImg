@@ -98,7 +98,6 @@ class MainWindow(QMainWindow, WindowMixin):
         self.dir_name = None
         self.label_hist = []
         self.last_open_dir = None
-        self.cur_img_idx = 0
         self.img_count = len(self.m_img_list)
 
         # Whether we need to save or not.
@@ -126,6 +125,7 @@ class MainWindow(QMainWindow, WindowMixin):
         list_layout = QVBoxLayout()
         list_layout.setContentsMargins(0, 0, 0, 0)
 
+        
         # Create a widget for using default label
         self.use_default_label_checkbox = QCheckBox(get_str('useDefaultLabel'))
         self.use_default_label_checkbox.setChecked(False)
@@ -242,6 +242,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
         save = action(get_str('save'), self.save_file,
                       'Ctrl+S', 'save', get_str('saveDetail'), enabled=False)
+        
+        self.cur_img_idx = settings.get(SETTING_LAST_IMAGE_INDEX, 0)
+        print(self.cur_img_idx)
 
         def get_format_meta(format):
             """
@@ -1174,8 +1177,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
             # Default : select last item if there is at least one item
             if self.label_list.count():
-                self.label_list.setCurrentItem(self.label_list.item(self.label_list.count() - 1))
-                self.label_list.item(self.label_list.count() - 1).setSelected(True)
+                item_idx = self.label_list.count() - 1
+                self.label_list.setCurrentItem(self.label_list.item(item_idx))
+                self.label_list.item(item_idx).setSelected(True)
 
             self.canvas.setFocus(True)
             return True
@@ -1284,6 +1288,8 @@ class MainWindow(QMainWindow, WindowMixin):
         settings[SETTING_PAINT_LABEL] = self.display_label_option.isChecked()
         settings[SETTING_DRAW_SQUARE] = self.draw_squares_option.isChecked()
         settings[SETTING_LABEL_FILE_FORMAT] = self.label_file_format
+        settings[SETTING_LAST_IMAGE_INDEX] = self.cur_img_idx
+        # print('save_settings')
         settings.save()
 
     def load_recent(self, filename):
@@ -1381,6 +1387,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.file_list_widget.clear()
         self.m_img_list = self.scan_all_images(dir_path)
         self.img_count = len(self.m_img_list)
+        
         self.open_next_image()
         for imgPath in self.m_img_list:
             item = QListWidgetItem(imgPath)
@@ -1450,8 +1457,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
         filename = None
         if self.file_path is None:
-            filename = self.m_img_list[0]
-            self.cur_img_idx = 0
+            filename = self.m_img_list[self.cur_img_idx]
+            # self.cur_img_idx = 0
         else:
             if self.cur_img_idx + 1 < self.img_count:
                 self.cur_img_idx += 1
@@ -1470,7 +1477,7 @@ class MainWindow(QMainWindow, WindowMixin):
         if filename:
             if isinstance(filename, (tuple, list)):
                 filename = filename[0]
-            self.cur_img_idx = 0
+            # self.cur_img_idx = 0
             self.img_count = 1
             self.load_file(filename)
 
