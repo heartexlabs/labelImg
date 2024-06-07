@@ -5,7 +5,7 @@ import pickle
 class Settings(object):
     def __init__(self):
         # Be default, the home will be in the same folder as labelImg
-        home = os.path.expanduser("~")
+        home = os.path.expanduser("./")
         self.data = {}
         self.path = os.path.join(home, '.labelImgSettings.pkl')
 
@@ -31,6 +31,7 @@ class Settings(object):
         try:
             if os.path.exists(self.path):
                 with open(self.path, 'rb') as f:
+                    # print(f)
                     self.data = pickle.load(f)
                     return True
         except:

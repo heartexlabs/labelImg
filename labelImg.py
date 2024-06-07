@@ -23,7 +23,8 @@ except ImportError:
         sip.setapi('QVariant', 2)
     from PyQt4.QtGui import *
     from PyQt4.QtCore import *
-
+    
+import qdarkstyle
 from libs.combobox import ComboBox
 from libs.default_label_combobox import DefaultLabelComboBox
 from libs.resources import *
@@ -97,7 +98,6 @@ class MainWindow(QMainWindow, WindowMixin):
         self.dir_name = None
         self.label_hist = []
         self.last_open_dir = None
-        self.cur_img_idx = 0
         self.img_count = len(self.m_img_list)
 
         # Whether we need to save or not.
@@ -125,6 +125,7 @@ class MainWindow(QMainWindow, WindowMixin):
         list_layout = QVBoxLayout()
         list_layout.setContentsMargins(0, 0, 0, 0)
 
+        
         # Create a widget for using default label
         self.use_default_label_checkbox = QCheckBox(get_str('useDefaultLabel'))
         self.use_default_label_checkbox.setChecked(False)
@@ -241,6 +242,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
         save = action(get_str('save'), self.save_file,
                       'Ctrl+S', 'save', get_str('saveDetail'), enabled=False)
+        
+        self.cur_img_idx = settings.get(SETTING_LAST_IMAGE_INDEX, 0)
+        print(self.cur_img_idx)
 
         def get_format_meta(format):
             """
@@ -426,6 +430,14 @@ class MainWindow(QMainWindow, WindowMixin):
         self.display_label_option.setChecked(settings.get(SETTING_PAINT_LABEL, False))
         self.display_label_option.triggered.connect(self.toggle_paint_labels_option)
 
+        # Add a toggle action for dark/light mode
+        dark_mode_init = True # Set the initial mode
+        self.dark_mode_action = QAction('Dark Mode', self)
+        self.dark_mode_action.setCheckable(True)
+        self.dark_mode_action.setChecked(dark_mode_init)  
+        self.dark_mode_action.triggered.connect(self.toggle_dark_mode)
+        self.toggle_dark_mode() if dark_mode_init else None
+
         add_actions(self.menus.file,
                     (open, open_dir, change_save_dir, open_annotation, copy_prev_bounding, self.menus.recentFiles, save, save_format, save_as, close, reset_all, delete_image, quit))
         add_actions(self.menus.help, (help_default, show_info, show_shortcut))
@@ -433,6 +445,7 @@ class MainWindow(QMainWindow, WindowMixin):
             self.auto_saving,
             self.single_class_mode,
             self.display_label_option,
+            self.dark_mode_action,
             labels, advanced_mode, None,
             hide_all, show_all, None,
             zoom_in, zoom_out, zoom_org, None,
@@ -1164,8 +1177,9 @@ class MainWindow(QMainWindow, WindowMixin):
 
             # Default : select last item if there is at least one item
             if self.label_list.count():
-                self.label_list.setCurrentItem(self.label_list.item(self.label_list.count() - 1))
-                self.label_list.item(self.label_list.count() - 1).setSelected(True)
+                item_idx = self.label_list.count() - 1
+                self.label_list.setCurrentItem(self.label_list.item(item_idx))
+                self.label_list.item(item_idx).setSelected(True)
 
             self.canvas.setFocus(True)
             return True
@@ -1274,6 +1288,8 @@ class MainWindow(QMainWindow, WindowMixin):
         settings[SETTING_PAINT_LABEL] = self.display_label_option.isChecked()
         settings[SETTING_DRAW_SQUARE] = self.draw_squares_option.isChecked()
         settings[SETTING_LABEL_FILE_FORMAT] = self.label_file_format
+        settings[SETTING_LAST_IMAGE_INDEX] = self.cur_img_idx
+        # print('save_settings')
         settings.save()
 
     def load_recent(self, filename):
@@ -1371,6 +1387,7 @@ class MainWindow(QMainWindow, WindowMixin):
         self.file_list_widget.clear()
         self.m_img_list = self.scan_all_images(dir_path)
         self.img_count = len(self.m_img_list)
+        
         self.open_next_image()
         for imgPath in self.m_img_list:
             item = QListWidgetItem(imgPath)
@@ -1440,8 +1457,8 @@ class MainWindow(QMainWindow, WindowMixin):
 
         filename = None
         if self.file_path is None:
-            filename = self.m_img_list[0]
-            self.cur_img_idx = 0
+            filename = self.m_img_list[self.cur_img_idx]
+            # self.cur_img_idx = 0
         else:
             if self.cur_img_idx + 1 < self.img_count:
                 self.cur_img_idx += 1
@@ -1460,7 +1477,7 @@ class MainWindow(QMainWindow, WindowMixin):
         if filename:
             if isinstance(filename, (tuple, list)):
                 filename = filename[0]
-            self.cur_img_idx = 0
+            # self.cur_img_idx = 0
             self.img_count = 1
             self.load_file(filename)
 
@@ -1668,6 +1685,14 @@ class MainWindow(QMainWindow, WindowMixin):
 
     def toggle_draw_square(self):
         self.canvas.set_drawing_shape_to_square(self.draw_squares_option.isChecked())
+
+    def toggle_dark_mode(self):
+        if self.dark_mode_action.isChecked():
+            # Apply dark mode stylesheet
+            self.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+        else:
+            # Apply light mode stylesheet or your default stylesheet
+            self.setStyleSheet("")  # Replace with your default stylesheet if any
 
 def inverted(color):
     return QColor(*[255 - v for v in color.getRgb()])
